@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ShortList — Recruiter Wireframe</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy:#1F2A44; --navy2:#2A3756; --teal:#2D7D6E; --teal-dk:#205A4F;
+    --paper:#F7F6F2; --card:#FFFFFF; --ink:#1F2A44; --muted:#6B7184; --faint:#9AA0B0;
+    --line:#E4E2DA; --line2:#ECEAE2; --amber:#B6852A; --amber-bg:#FBF3E1;
+    --good:#2D7D6E; --good-bg:#E7F2EE; --chipbg:#EFEEE8;
+    --shadow:0 1px 2px rgba(31,42,68,.06),0 8px 24px rgba(31,42,68,.06);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'IBM Plex Sans',sans-serif;background:var(--paper);color:var(--ink);
+    -webkit-font-smoothing:antialiased;line-height:1.5}
+  .mono{font-family:'IBM Plex Mono',monospace}
+  .serif{font-family:'Fraunces',serif}
+  .app{display:grid;grid-template-columns:236px 1fr;min-height:100vh}
+
+  /* sidebar */
+  .side{background:var(--navy);color:#DDE3EE;padding:22px 16px;display:flex;flex-direction:column;gap:6px;position:sticky;top:0;height:100vh}
+  .brand{display:flex;align-items:center;gap:10px;padding:4px 8px 18px;border-bottom:1px solid rgba(255,255,255,.08);margin-bottom:10px}
+  .brand .logo{width:26px;height:26px;border-radius:7px;background:var(--teal);display:grid;place-items:center;color:#fff;font-weight:700;font-family:'Fraunces',serif;font-size:16px}
+  .brand b{font-family:'Fraunces',serif;font-weight:600;font-size:18px;color:#fff;letter-spacing:.2px}
+  .brand .pill{margin-left:auto;font-size:9px;letter-spacing:.12em;background:rgba(255,255,255,.1);color:#cfe3de;padding:3px 7px;border-radius:20px;font-weight:600}
+  .navlbl{font-size:10px;letter-spacing:.14em;color:#7c86a0;text-transform:uppercase;padding:14px 10px 6px}
+  .nav{display:flex;align-items:center;gap:10px;padding:9px 11px;border-radius:9px;color:#c4cce0;cursor:pointer;font-size:14px;font-weight:500;transition:.15s}
+  .nav:hover{background:rgba(255,255,255,.06);color:#fff}
+  .nav.active{background:var(--teal);color:#fff}
+  .nav .ic{width:16px;height:16px;flex:none;opacity:.9}
+  .nav .ct{margin-left:auto;font-size:11px;background:rgba(255,255,255,.12);padding:1px 7px;border-radius:20px;font-family:'IBM Plex Mono',monospace}
+  .side .foot{margin-top:auto;font-size:11px;color:#6b7493;padding:10px;border-top:1px solid rgba(255,255,255,.08)}
+  .side .foot .u{color:#cdd5e6;font-weight:600}
+
+  /* main */
+  .main{padding:30px 38px 60px;max-width:1080px}
+  .topline{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:24px}
+  h1.serif{font-weight:600;font-size:30px;letter-spacing:-.4px;line-height:1.1}
+  .sub{color:var(--muted);font-size:13.5px;margin-top:6px}
+  .btn{font-family:inherit;font-size:13px;font-weight:600;border:1px solid var(--line);background:var(--card);color:var(--ink);padding:9px 15px;border-radius:9px;cursor:pointer;transition:.15s}
+  .btn:hover{border-color:var(--navy)}
+  .btn.primary{background:var(--teal);border-color:var(--teal);color:#fff}
+  .btn.primary:hover{background:var(--teal-dk);border-color:var(--teal-dk)}
+  .btn.ghost{background:transparent;border-color:transparent;color:var(--teal-dk);padding:9px 6px}
+
+  .screen{display:none;animation:fade .35s ease}
+  .screen.show{display:block}
+  @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+  /* cards/lists */
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow)}
+  .jobrow{display:grid;grid-template-columns:1fr auto auto auto;gap:18px;align-items:center;padding:18px 20px;border-bottom:1px solid var(--line2);cursor:pointer;transition:.12s}
+  .jobrow:last-child{border-bottom:none}
+  .jobrow:hover{background:#FBFAF6}
+  .jobrow .jt{font-weight:600;font-size:15.5px}
+  .jobrow .jm{color:var(--faint);font-size:12px;margin-top:3px}
+  .count{font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:15px}
+  .count small{display:block;font-family:'IBM Plex Sans';font-weight:400;font-size:10.5px;color:var(--faint);letter-spacing:.04em;text-transform:uppercase}
+  .stat{font-size:11px;font-weight:600;padding:4px 10px;border-radius:20px;background:var(--good-bg);color:var(--good)}
+  .stat.open{background:#EAF0FA;color:#3A5BA0}
+  .arrow{color:var(--faint);font-size:18px}
+
+  .annot{font-size:11.5px;color:var(--teal-dk);background:var(--good-bg);border:1px dashed var(--teal);border-radius:8px;padding:7px 11px;display:inline-flex;gap:7px;align-items:center;margin-bottom:14px}
+  .annot::before{content:"◆";font-size:8px}
+
+  /* search composer */
+  .composer{padding:22px;display:grid;gap:18px}
+  .field label{display:block;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:600;margin-bottom:7px}
+  .input,.ta{width:100%;border:1px solid var(--line);border-radius:10px;padding:11px 13px;font-family:inherit;font-size:14px;color:var(--ink);background:#FCFBF8;resize:none}
+  .ta{min-height:62px}
+  .input:focus,.ta:focus{outline:none;border-color:var(--teal)}
+  .two{display:grid;grid-template-columns:1fr 300px;gap:18px}
+  .weights{display:grid;gap:9px}
+  .wrow{display:grid;grid-template-columns:160px 1fr 34px;gap:10px;align-items:center}
+  .wrow .wn{font-size:12.5px;color:var(--ink)}
+  .track{height:6px;background:var(--line);border-radius:6px;position:relative}
+  .track i{position:absolute;left:0;top:0;height:6px;border-radius:6px;background:var(--teal)}
+  .track::after{content:"";position:absolute;top:50%;width:13px;height:13px;border-radius:50%;background:#fff;border:2px solid var(--teal);transform:translate(-50%,-50%)}
+  .wv{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--muted);text-align:right}
+  .modelbox{border:1px solid var(--line);border-radius:10px;padding:13px;background:#FCFBF8}
+  .keyrow{display:flex;align-items:center;gap:8px;font-size:13px}
+  .lock{width:15px;height:15px;color:var(--teal)}
+  .modelsel{margin-top:10px;display:flex;align-items:center;gap:8px;font-size:13px;border:1px solid var(--line);border-radius:8px;padding:8px 10px;background:#fff;justify-content:space-between}
+  .badge-byok{font-size:10px;font-weight:600;color:var(--teal-dk);background:var(--good-bg);padding:2px 8px;border-radius:20px}
+  .runbar{display:flex;align-items:center;justify-content:space-between;gap:14px;padding-top:4px}
+  .runbar .note{font-size:12px;color:var(--faint)}
+
+  /* results */
+  .resbar{display:flex;align-items:center;justify-content:space-between;margin:26px 0 12px}
+  .resbar .t{font-family:'Fraunces',serif;font-size:19px;font-weight:600}
+  .resbar .t em{font-style:normal;color:var(--teal-dk)}
+  .resbar .meta{font-size:12px;color:var(--muted);font-family:'IBM Plex Mono',monospace}
+  .crow{display:grid;grid-template-columns:34px 1fr auto;gap:16px;align-items:center;padding:16px 20px;border-bottom:1px solid var(--line2);cursor:pointer;transition:.12s}
+  .crow:last-child{border-bottom:none}
+  .crow:hover{background:#FBFAF6}
+  .rank{font-family:'Fraunces',serif;font-size:20px;font-weight:600;color:var(--faint);text-align:center}
+  .crow:hover .rank{color:var(--teal)}
+  .cname{font-weight:600;font-size:15px;display:flex;align-items:center;gap:9px}
+  .chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:7px}
+  .chip{font-size:11px;color:var(--ink);background:var(--chipbg);padding:3px 9px;border-radius:20px}
+  .chip.ev{background:#fff;border:1px solid var(--line);color:var(--muted);font-style:italic;max-width:430px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .flag{font-size:10.5px;font-weight:600;color:var(--amber);background:var(--amber-bg);padding:2px 8px;border-radius:20px}
+  .score{font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:22px;text-align:right}
+  .score small{display:block;font-family:'IBM Plex Sans';font-weight:500;font-size:10px;color:var(--faint);letter-spacing:.05em}
+  .sbar{width:90px;height:5px;background:var(--line);border-radius:5px;margin-top:6px;margin-left:auto}
+  .sbar i{display:block;height:5px;border-radius:5px;background:var(--teal)}
+
+  /* candidate slideover */
+  .scrim{position:fixed;inset:0;background:rgba(31,42,68,.28);opacity:0;pointer-events:none;transition:.25s;z-index:40}
+  .scrim.show{opacity:1;pointer-events:auto}
+  .panel{position:fixed;top:0;right:0;height:100vh;width:520px;max-width:94vw;background:var(--paper);box-shadow:-12px 0 40px rgba(31,42,68,.18);transform:translateX(100%);transition:.3s cubic-bezier(.4,0,.1,1);z-index:50;overflow-y:auto}
+  .panel.show{transform:none}
+  .ph{padding:22px 26px 18px;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--paper);z-index:2}
+  .ph .x{float:right;cursor:pointer;color:var(--muted);font-size:20px;line-height:1}
+  .ph .nm{font-family:'Fraunces',serif;font-size:24px;font-weight:600}
+  .ph .role{color:var(--muted);font-size:13px;margin-top:2px}
+  .ph .big{font-family:'IBM Plex Mono',monospace;font-size:34px;font-weight:600;color:var(--teal-dk);margin-top:12px}
+  .ph .big small{font-family:'IBM Plex Sans';font-size:12px;color:var(--faint);font-weight:500}
+  .pbody{padding:20px 26px 40px}
+  .dsbanner{font-size:11.5px;color:var(--muted);background:#fff;border:1px solid var(--line);border-radius:8px;padding:9px 12px;margin-bottom:18px}
+  .dsbanner b{color:var(--ink)}
+  .crititle{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:600;margin:6px 0 12px}
+  .crit{padding:14px 0;border-bottom:1px solid var(--line2)}
+  .crit:last-child{border-bottom:none}
+  .crit .top{display:flex;justify-content:space-between;align-items:center;gap:10px}
+  .crit .cn{font-weight:600;font-size:14px}
+  .crit .cw{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--faint)}
+  .crit .cs{font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:14px}
+  .cbar{height:6px;background:var(--line);border-radius:6px;margin:9px 0}
+  .cbar i{display:block;height:6px;border-radius:6px;background:var(--teal)}
+  .ev{font-size:13px;color:#41475a;background:#fff;border-left:3px solid var(--teal);padding:8px 12px;border-radius:0 8px 8px 0;margin-top:4px}
+  .ev::before{content:"“"}.ev::after{content:"”"}
+  .ev.none{border-left-color:var(--amber);color:var(--amber);background:var(--amber-bg);font-style:italic}
+  .ev.none::before,.ev.none::after{content:""}
+  .pactions{display:flex;gap:10px;margin-top:24px}
+  .pactions .btn{flex:1;text-align:center}
+  .link{color:var(--teal-dk);font-size:12.5px;font-weight:600;text-decoration:none;display:inline-flex;gap:6px;align-items:center;margin-top:14px}
+
+  /* settings */
+  .setgrid{display:grid;gap:18px;max-width:620px}
+  .setcard{padding:22px}
+  .setcard h3{font-family:'Fraunces',serif;font-size:18px;font-weight:600;margin-bottom:4px}
+  .setcard p{font-size:13px;color:var(--muted);margin-bottom:16px}
+  .keyfield{display:flex;gap:10px;align-items:center}
+  .keyfield .input{font-family:'IBM Plex Mono',monospace;letter-spacing:1px}
+  .valid{font-size:12px;color:var(--good);font-weight:600;display:inline-flex;gap:6px;align-items:center;margin-top:10px}
+  .neverbox{font-size:12px;color:var(--muted);background:var(--good-bg);border:1px solid #cfe3de;border-radius:9px;padding:10px 13px;margin-top:14px;display:flex;gap:9px;align-items:flex-start}
+  .toggle{width:38px;height:22px;border-radius:20px;background:var(--teal);position:relative;flex:none}
+  .toggle::after{content:"";position:absolute;width:16px;height:16px;border-radius:50%;background:#fff;top:3px;right:3px}
+  .setrow{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:12px 0;border-top:1px solid var(--line2)}
+  .setrow .l{font-size:13.5px;font-weight:500}.setrow .d{font-size:12px;color:var(--faint)}
+  svg{display:block}
+  @media(max-width:760px){.app{grid-template-columns:1fr}.side{display:none}.main{padding:20px}.two{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- SIDEBAR -->
+  <aside class="side">
+    <div class="brand">
+      <div class="logo">S</div><b>ShortList</b><span class="pill">WIREFRAME</span>
+    </div>
+    <div class="navlbl">Workspace</div>
+    <div class="nav active" data-screen="jobs" onclick="go(this)">
+      <svg class="ic" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="2" y="3.5" width="12" height="10" rx="1.5"/><path d="M5.5 3.5V2.5h5v1"/><path d="M2 7h12"/></svg>
+      Jobs <span class="ct">4</span>
+    </div>
+    <div class="nav" data-screen="shortlist" onclick="go(this)">
+      <svg class="ic" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M2.5 4h11M2.5 8h7M2.5 12h4"/><circle cx="12.5" cy="11" r="2.2"/><path d="M14 12.5l1.2 1.2"/></svg>
+      Shortlist
+    </div>
+    <div class="nav" data-screen="settings" onclick="go(this)">
+      <svg class="ic" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="8" cy="8" r="2.2"/><path d="M8 1.5v2M8 12.5v2M14.5 8h-2M3.5 8h-2M12.6 3.4l-1.4 1.4M4.8 11.2l-1.4 1.4M12.6 12.6l-1.4-1.4M4.8 4.8L3.4 3.4"/></svg>
+      Settings &amp; keys
+    </div>
+    <div class="foot">Signed in as<br><span class="u">Ankit · TA Partner</span><br>Acme Corp workspace</div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+
+    <!-- ===== JOBS ===== -->
+    <section class="screen show" id="jobs">
+      <div class="topline">
+        <div>
+          <h1 class="serif">Jobs</h1>
+          <div class="sub">Each job collects CV-only applications through a shareable link.</div>
+        </div>
+        <button class="btn primary">+ New job &amp; apply link</button>
+      </div>
+      <div class="annot">Click any job to open its applicant pool and run a shortlist.</div>
+      <div class="card">
+        <div class="jobrow" onclick="openJob()">
+          <div><div class="jt">Senior Backend Engineer — Payments</div><div class="jm mono">acme.shortlist.app/apply/sbe-pay · opened 6 days ago</div></div>
+          <div class="count">312<small>applicants</small></div>
+          <div class="stat open">Open</div><div class="arrow">›</div>
+        </div>
+        <div class="jobrow" onclick="openJob()">
+          <div><div class="jt">Data Analyst, Cloud</div><div class="jm mono">acme.shortlist.app/apply/da-cloud · opened 2 weeks ago</div></div>
+          <div class="count">146<small>applicants</small></div>
+          <div class="stat">Shortlisted</div><div class="arrow">›</div>
+        </div>
+        <div class="jobrow" onclick="openJob()">
+          <div><div class="jt">SDR / Business Development</div><div class="jm mono">acme.shortlist.app/apply/sdr · opened 3 weeks ago</div></div>
+          <div class="count">203<small>applicants</small></div>
+          <div class="stat open">Open</div><div class="arrow">›</div>
+        </div>
+        <div class="jobrow" onclick="openJob()">
+          <div><div class="jt">Product Designer</div><div class="jm mono">acme.shortlist.app/apply/pd · opened 1 month ago</div></div>
+          <div class="count">87<small>applicants</small></div>
+          <div class="stat">Shortlisted</div><div class="arrow">›</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== SHORTLIST ===== -->
+    <section class="screen" id="shortlist">
+      <div class="topline">
+        <div>
+          <button class="btn ghost" data-screen="jobs" onclick="go(this)">‹ Jobs</button>
+          <h1 class="serif" style="margin-top:4px">Senior Backend Engineer — Payments</h1>
+          <div class="sub mono">312 applicants · CV-only intake</div>
+        </div>
+      </div>
+
+      <div class="annot">Describe the role in plain English, attach the JD, set what matters — then run.</div>
+
+      <div class="card composer">
+        <div class="field">
+          <label>What are you looking for?</label>
+          <textarea class="ta">Strong Python + distributed systems. Payments / fintech domain a plus. 5+ years, and must have led or mentored engineers. Prefer experience with high-throughput, low-latency systems.</textarea>
+        </div>
+        <div class="two">
+          <div class="field">
+            <label>Job description</label>
+            <textarea class="ta" style="min-height:96px">JD_SeniorBackend_Payments.pdf attached · paste or pull from job. We're hiring a senior backend engineer to own our payments ledger and settlement services…</textarea>
+          </div>
+          <div class="field">
+            <label>Model &amp; key</label>
+            <div class="modelbox">
+              <div class="keyrow">
+                <svg class="lock" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="3" y="7" width="10" height="6.5" rx="1.3"/><path d="M5 7V5.2a3 3 0 016 0V7"/></svg>
+                <span>Runs on <b>your</b> API key</span>
+              </div>
+              <div class="modelsel"><span>Claude (Anthropic)</span><span class="badge-byok">BYOK ▾</span></div>
+              <div class="mono" style="font-size:11px;color:var(--faint);margin-top:9px">~$1–3 for this pool · billed to your provider</div>
+            </div>
+          </div>
+        </div>
+        <div class="field">
+          <label>What matters most (weights)</label>
+          <div class="weights">
+            <div class="wrow"><span class="wn">Python / backend</span><div class="track"><i style="width:35%"></i></div><span class="wv">35%</span></div>
+            <div class="wrow"><span class="wn">Distributed systems</span><div class="track"><i style="width:25%"></i></div><span class="wv">25%</span></div>
+            <div class="wrow"><span class="wn">Payments domain</span><div class="track"><i style="width:15%"></i></div><span class="wv">15%</span></div>
+            <div class="wrow"><span class="wn">Leadership</span><div class="track"><i style="width:15%"></i></div><span class="wv">15%</span></div>
+            <div class="wrow"><span class="wn">Communication</span><div class="track"><i style="width:10%"></i></div><span class="wv">10%</span></div>
+          </div>
+        </div>
+        <div class="runbar">
+          <span class="note">Each CV is scored on its own, with cited evidence — no candidate compared blindly against another.</span>
+          <button class="btn primary" onclick="document.getElementById('results').scrollIntoView({behavior:'smooth'})">Run shortlist →</button>
+        </div>
+      </div>
+
+      <div class="resbar" id="results">
+        <div class="t">Ranked shortlist · <em>top 10 of 312</em></div>
+        <div class="meta">scored in 2m 14s · evidence-cited</div>
+      </div>
+
+      <div class="card" id="reslist"></div>
+      <div style="text-align:center;margin-top:14px"><button class="btn">Show next 10 ›</button></div>
+    </section>
+
+    <!-- ===== SETTINGS ===== -->
+    <section class="screen" id="settings">
+      <div class="topline">
+        <div><h1 class="serif">Settings &amp; keys</h1><div class="sub">Bring your own model key. We never store it in readable form.</div></div>
+      </div>
+      <div class="setgrid">
+        <div class="card setcard">
+          <h3>API key (BYOK)</h3>
+          <p>Paste a key from any supported provider. All scoring runs on this key, billed directly to your provider account.</p>
+          <div class="keyfield">
+            <input class="input" value="sk-ant-••••••••••••••••••••••••••3f9a">
+            <button class="btn">Test key</button>
+          </div>
+          <div class="valid">✓ Validated — Anthropic · last checked just now</div>
+          <div class="neverbox">
+            <svg class="lock" style="color:var(--teal);margin-top:1px" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="3" y="7" width="10" height="6.5" rx="1.3"/><path d="M5 7V5.2a3 3 0 016 0V7"/></svg>
+            <span>Your key is encrypted at rest and never written to logs or shown again in full. We never see it in plaintext.</span>
+          </div>
+        </div>
+        <div class="card setcard">
+          <h3>Model &amp; scoring</h3>
+          <p>Pick the default model and how scoring runs.</p>
+          <div class="setrow" style="border-top:none"><div><div class="l">Default model</div><div class="d">Used for scoring &amp; refine passes</div></div><div class="modelsel" style="width:200px">Claude (Anthropic) <span>▾</span></div></div>
+          <div class="setrow"><div><div class="l">Cheap prefilter pass</div><div class="d">Use a fast model to triage large pools first</div></div><div class="toggle"></div></div>
+          <div class="setrow"><div><div class="l">Batch mode</div><div class="d">Halve cost on non-urgent searches</div></div><div class="toggle"></div></div>
+          <div class="setrow"><div><div class="l">Mask names before scoring</div><div class="d">Hide name &amp; contact for fairness</div></div><div class="toggle"></div></div>
+        </div>
+        <div class="card setcard">
+          <h3>Data &amp; consent</h3>
+          <p>Applicant CVs stay scoped to your workspace.</p>
+          <div class="setrow" style="border-top:none"><div><div class="l">CV retention</div><div class="d">Auto-delete after a set period</div></div><div class="modelsel" style="width:160px">12 months <span>▾</span></div></div>
+          <div class="setrow"><div><div class="l">Talent-network opt-in</div><div class="d">Only candidates who explicitly consent</div></div><div class="toggle" style="background:var(--line)"></div></div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- CANDIDATE SLIDE-OVER -->
+<div class="scrim" id="scrim" onclick="closeC()"></div>
+<aside class="panel" id="panel">
+  <div class="ph">
+    <span class="x" onclick="closeC()">✕</span>
+    <div class="nm" id="cNm">Aarav Menon</div>
+    <div class="role" id="cRole">Staff Engineer · 9 yrs · Bengaluru</div>
+    <div class="big"><span id="cScore">92</span><small> / 100 fit</small></div>
+  </div>
+  <div class="pbody">
+    <div class="dsbanner"><b>Decision support.</b> This is a ranked suggestion with cited evidence — you make the call.</div>
+    <div class="crititle">Scored against your rubric</div>
+    <div id="critList"></div>
+    <a class="link" href="#">↗ View original CV (Aarav_Menon.pdf)</a>
+    <div class="pactions">
+      <button class="btn primary">★ Add to shortlist</button>
+      <button class="btn">Pass</button>
+      <button class="btn">Add note</button>
+    </div>
+  </div>
+</aside>
+
+<script>
+  // ---- screen nav ----
+  function go(el){
+    var s=el.getAttribute('data-screen');
+    document.querySelectorAll('.screen').forEach(x=>x.classList.remove('show'));
+    document.getElementById(s).classList.add('show');
+    document.querySelectorAll('.nav').forEach(n=>{
+      n.classList.toggle('active', n.getAttribute('data-screen')===s);
+    });
+    window.scrollTo(0,0);
+  }
+  function openJob(){
+    document.querySelectorAll('.screen').forEach(x=>x.classList.remove('show'));
+    document.getElementById('shortlist').classList.add('show');
+    document.querySelectorAll('.nav').forEach(n=>n.classList.toggle('active',n.getAttribute('data-screen')==='shortlist'));
+    window.scrollTo(0,0);
+  }
+
+  // ---- results data ----
+  const results=[
+    {r:1,n:"Aarav Menon",m:"Staff Engineer · 9 yrs · Bengaluru",s:92,chips:["Python","Distributed systems","Led team of 6"],ev:"Built and led the team owning a payments ledger handling 12k TPS…"},
+    {r:2,n:"Priya Nair",m:"Senior SWE · 7 yrs · Remote",s:89,chips:["Python","Kafka","Fintech"],ev:"Designed settlement pipeline for a digital wallet processing ₹400Cr/mo…"},
+    {r:3,n:"Daniel Okafor",m:"Backend Lead · 8 yrs · Pune",s:87,chips:["Go + Python","Low-latency","Mentor"],ev:"Owned the core transaction service; mentored 4 engineers to senior…"},
+    {r:4,n:"Sara Iqbal",m:"Senior SWE · 6 yrs · Hyderabad",s:85,chips:["Python","Microservices"],flag:"Leadership: insufficient evidence",ev:"Strong distributed-systems work; no explicit leadership/mentoring mentioned…"},
+    {r:5,n:"Rohan Gupta",m:"SWE II · 5 yrs · Bengaluru",s:83,chips:["Python","Payments APIs","On-call lead"],ev:"Integrated 6 payment gateways; ran the on-call rotation for billing…"},
+    {r:6,n:"Mei Lin Tan",m:"Senior SWE · 7 yrs · Singapore",s:81,chips:["Python","Event-driven","Scale"],ev:"Re-architected order service to event-driven, cut latency by 60%…"},
+    {r:7,n:"Vikram Reddy",m:"Backend Eng · 6 yrs · Chennai",s:79,chips:["Python","Postgres","Fintech"],ev:"Built reconciliation engine for a lending platform; ledger accuracy…"},
+    {r:8,n:"Hana Suzuki",m:"SWE · 5 yrs · Remote",s:77,chips:["Python","gRPC"],flag:"Payments domain: not stated",ev:"Solid backend + distributed systems; domain is adtech, not payments…"},
+  ];
+  const crit=[
+    {n:"Python / backend",w:"35%",s:95,ev:"8+ years of Python across high-scale backend services, primary language since 2017"},
+    {n:"Distributed systems",w:"25%",s:90,ev:"Owned a payments ledger handling 12,000 transactions/sec with multi-region failover"},
+    {n:"Payments domain",w:"15%",s:88,ev:"Led the settlement & reconciliation platform at a Tier-1 payments company"},
+    {n:"Leadership",w:"15%",s:92,ev:"Led and grew a team of 6 engineers; ran hiring and technical mentoring"},
+    {n:"Communication",w:"10%",s:80,ev:null}
+  ];
+
+  const rl=document.getElementById('reslist');
+  rl.innerHTML=results.map(c=>`
+    <div class="crow" onclick='openC(${JSON.stringify(c.n)},${JSON.stringify(c.m)},${c.s})'>
+      <div class="rank">${c.r}</div>
+      <div>
+        <div class="cname">${c.n}${c.flag?`<span class="flag">⚑ ${c.flag}</span>`:''}</div>
+        <div class="chips">${c.chips.map(x=>`<span class="chip">${x}</span>`).join('')}<span class="chip ev">“${c.ev}”</span></div>
+      </div>
+      <div><div class="score">${c.s}<small>FIT</small></div><div class="sbar"><i style="width:${c.s}%"></i></div></div>
+    </div>`).join('');
+
+  function openC(name,role,score){
+    document.getElementById('cNm').textContent=name;
+    document.getElementById('cRole').textContent=role;
+    document.getElementById('cScore').textContent=score;
+    document.getElementById('critList').innerHTML=crit.map(c=>`
+      <div class="crit">
+        <div class="top"><span class="cn">${c.n} <span class="cw">· ${c.w}</span></span><span class="cs">${c.s}</span></div>
+        <div class="cbar"><i style="width:${c.s}%"></i></div>
+        ${c.ev?`<div class="ev">${c.ev}</div>`:`<div class="ev none">⚑ Insufficient evidence in CV — not scored up</div>`}
+      </div>`).join('');
+    document.getElementById('scrim').classList.add('show');
+    document.getElementById('panel').classList.add('show');
+  }
+  function closeC(){
+    document.getElementById('scrim').classList.remove('show');
+    document.getElementById('panel').classList.remove('show');
+  }
+</script>
+</body>
+</html>

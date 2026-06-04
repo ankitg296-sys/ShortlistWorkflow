@@ -1,0 +1,52 @@
+flowchart TD
+    Candidate["👤 Candidate"] -->|"opens job link, uploads CV"| Intake
+
+    subgraph INTAKE["🌐 INTAKE SERVICE — public · holds NO keys"]
+        direction TB
+        Intake["Apply screens<br/>(minimal fields + CV)"] --> Store[("Supabase:<br/>CV file + application<br/>grouped by job")]
+        Intake --> Route(["Routing<br/>queue / webhook"])
+    end
+
+    Route -->|"new application"| Proc
+
+    Recruiter["🧑‍💼 Recruiter"] -->|"login · prompt + JD · weights"| Proc
+
+    subgraph PROC["🔐 PROCESSING SERVICE — private · does the AI work"]
+        direction TB
+        Proc["Search request"] --> Parse["1· Parse CV → clean text<br/>(OCR fallback)"]
+        Parse --> Score["2· Score each CV ALONE<br/>rubric + evidence quote<br/>+ insufficient-evidence flag"]
+        Score --> Rank["3· Rank by score<br/>plain code · no AI"]
+        Rank --> Refine["4· Refine top ~15<br/>one comparison call"]
+        Refine --> Shortlist["Shortlist + evidence"]
+    end
+
+    Vault[("🔒 Encrypted key vault<br/>BYOK · never logged")] -.->|"decrypt key only at call time"| Score
+    Vault -.-> Refine
+
+    Score ==>|"API call with<br/>customer's key"| Model
+    Refine ==> Model
+
+    subgraph MODEL["🧠 MODEL PROVIDER (behind a thin swap-able layer)"]
+        direction TB
+        Model{"Which key?"}
+        Model ==>|"YOUR setup now"| Claude["✅ Claude API — direct<br/>native caching + batch"]
+        Model -.->|"optional, add later"| OR["OpenRouter"]
+        OR -.-> Others["OpenAI · Gemini · others"]
+    end
+
+    Shortlist --> Dash["📊 Recruiter dashboard<br/>ranked · evidence-cited<br/>human makes the call"]
+    Dash --> Recruiter
+
+    classDef actor fill:#1F2A44,stroke:#1F2A44,color:#ffffff,font-weight:bold
+    classDef intake fill:#EAF3F1,stroke:#2D7D6E,color:#1F2A44
+    classDef proc fill:#F3F4F6,stroke:#205A4F,color:#1F2A44
+    classDef vault fill:#FCF4E3,stroke:#E8C97A,color:#1F2A44
+    classDef model fill:#E8EEF9,stroke:#3A5BA0,color:#1F2A44
+    classDef now fill:#DFF3EC,stroke:#2D7D6E,color:#1F2A44,font-weight:bold
+
+    class Candidate,Recruiter actor
+    class Intake,Store,Route intake
+    class Proc,Parse,Score,Rank,Refine,Shortlist,Dash proc
+    class Vault vault
+    class Model,OR,Others model
+    class Claude now
