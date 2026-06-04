@@ -10,9 +10,9 @@
 ---
 
 ## Current status
-- **Phase:** P4 — complete; P5 (hardening) next
-- **Last working on:** Ranking + refine + React dashboard
-- **Next up:** P5 — Security hardening, audit log, rate limits, data deletion
+- **Phase:** P5 — complete; P6 (pilot) + P7 (production) in progress
+- **Last working on:** P5 security hardening
+- **Next up:** P6 — Pilot onboarding flow; P7 — Production readiness (monitoring, load testing, docs)
 
 ## Decisions (append-only)
 - 2026-06-04 — Product is a B2B BYOK shortlisting **engine**, not a public job board. Candidate apply screens are in v1; public discovery board deferred.
@@ -30,6 +30,12 @@
 ---
 
 ## Log (newest at top)
+
+### 2026-06-05 — P5: Security hardening & compliance
+- What changed: Enhanced `audit_log` capture on search start/complete/error with full context (prompt, JD, criteria, model). Added `routers/compliance.py` — GET /compliance/audit-log (returns immutable logs), DELETE /compliance/data (org data deletion with explicit "DELETE ALL DATA" confirmation). Added `routers/quotas.py` — GET /quotas (quota usage), enforcement in searches trigger: max 10 concurrent searches, 50k candidates/month, 100 searches/month. Audit logging on all key operations (key_added, key_deleted, key_tested) — never logs plaintext keys. Enhanced `routers/keys.py` to audit-log key lifecycle. Verified API never exposes encrypted_key in responses. All queries filtered by org_id for cross-org isolation. Data deletion logs before and after. Tests: `test_compliance.py` validates audit logging, isolation, quotas, key exposure prevention.
+- Files touched: `processing_service/routers/compliance.py` (new), `processing_service/routers/quotas.py` (new), `processing_service/routers/keys.py` (audit logging), `processing_service/scoring/pipeline.py` (enhanced audit log), `processing_service/main.py` (router registration), `tests/test_compliance.py` (new)
+- How to test it: Manual: POST /keys/, GET /compliance/audit-log (should log key addition), DELETE /compliance/data (with confirmation). GET /quotas shows current usage. Auto: pytest tests/test_compliance.py
+- Notes: Quota limits are conservative (10 concurrent); can be tuned per customer in later phases. Data deletion is irreversible. Audit log is immutable (no delete policy). Security gate (P5 DoD) requires cross-org read test and key-exposure test — both must fail.
 
 ### 2026-06-05 — P4: rank + refine + React dashboard
 - What changed: `scoring/ranker.py` — deterministic rank by score desc, ties broken by candidate_id. `scoring/refiner.py` — one model call over top-15, returns refined order, falls back to score-based on any error (never crashes). Pipeline updated: score → rank → refine top-15 → update DB ranks. `routers/searches.py` — new `GET /searches/{id}/shortlist?top_n=10` endpoint, returns top N candidates ordered by rank. React dashboard (`web/`) — Vite + Tailwind, pages: LoginPage (Supabase Auth), JobsPage (create job, start search), ShortlistPage (ranked cards with scores, criteria, evidence, flags). Golden gate test harness (`tests/golden_run.py`) — documents 300-CV acceptance gate (awaits real dataset + answer key).

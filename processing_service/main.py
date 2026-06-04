@@ -10,6 +10,7 @@ from .routers import compliance as compliance_router
 from .routers import internal as internal_router
 from .routers import jobs as jobs_router
 from .routers import keys as keys_router
+from .routers import onboarding as onboarding_router
 from .routers import quotas as quotas_router
 from .routers import searches as searches_router
 
@@ -45,6 +46,7 @@ app.include_router(auth_router.router)
 app.include_router(compliance_router.router)
 app.include_router(keys_router.router)
 app.include_router(jobs_router.router)
+app.include_router(onboarding_router.router)
 app.include_router(quotas_router.router)
 app.include_router(searches_router.router)
 app.include_router(internal_router.router)
