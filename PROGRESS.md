@@ -12,7 +12,7 @@
 ## Current status
 - **Phase:** P0 — Foundations (in progress)
 - **Last working on:** Recruiter auth
-- **Next up:** Encrypted key vault (add org API key → envelope-encrypt → store; "test key" button)
+- **Next up:** Routing transport between services (P0 final task), then CI/deploy setup
 
 ## Decisions (append-only)
 - 2026-06-04 — Product is a B2B BYOK shortlisting **engine**, not a public job board. Candidate apply screens are in v1; public discovery board deferred.
@@ -29,6 +29,12 @@
 ---
 
 ## Log (newest at top)
+
+### 2026-06-05 — P0: encrypted key vault
+- What changed: `vault/crypto.py` — AES-256-GCM encrypt/decrypt (random 12-byte nonce per call; base64(nonce||ct||tag) stored). `vault/provider.py` — `test_api_key` calls Anthropic `messages.count_tokens` (free, validates auth without inference); key never logged, only pass/fail. `routers/keys.py` — POST /keys (encrypt + store, key_hint=last-4), GET /keys (metadata only, encrypted_key excluded from SELECT), DELETE /keys/{id} (explicit org_id filter since service role bypasses RLS), POST /keys/{id}/test (decrypt → live call → update validated_at → return {ok}). `default_model` added to config. `anthropic` and `cryptography` added to requirements.
+- Files touched: `processing_service/vault/crypto.py` (new), `processing_service/vault/provider.py` (new), `processing_service/routers/keys.py` (new), `processing_service/config.py`, `processing_service/main.py`, `requirements.txt`, `.env.example`, `tests/test_vault.py` (new), `tests/test_keys.py` (new)
+- How to test it: `pytest tests/test_vault.py tests/test_keys.py`. For manual end-to-end: run processing-service with real `.env`, sign in to get a JWT, `POST /keys/ {"provider":"anthropic","api_key":"sk-ant-..."}` → ciphertext stored, hint shown; `POST /keys/{id}/test` → `{"ok":true}`.
+- Notes: `encrypted_key` is never in any API response — excluded from the SELECT in list_keys and absent from `KeyOut` model. Org isolation on delete/test is enforced in code (explicit `.eq("org_id", ...)`) not just RLS, because service role key bypasses RLS.
 
 ### 2026-06-04 — P0: recruiter auth
 - What changed: `processing_service/db.py` (Supabase client singleton). `processing_service/dependencies.py` — two deps: `get_token_claims` (JWT-only, no DB) and `get_current_user` (JWT + profile lookup); returns typed dataclasses. `processing_service/routers/auth.py` — `POST /auth/signup` (create org + user row, idempotent) and `GET /auth/me` (return profile + org). Router wired into `main.py`. `PyJWT` added to requirements. `SUPABASE_JWT_SECRET` added to config and `.env.example`. 7 tests in `tests/test_auth.py`: error paths (no token, bad token) + happy paths with MagicMock Supabase client.
