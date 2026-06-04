@@ -108,12 +108,14 @@ async def test_internal_events_valid_token():
     """Valid token + valid payload → 200 {"received": true}."""
     from processing_service.main import app
 
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as c:
-        r = await c.post(
-            "/internal/events",
-            json=VALID_EVENT,
-            headers={"Authorization": f"Bearer {TEST_INTERNAL_TOKEN}"},
-        )
+    # Patch parse_application so the background task doesn't hit real Supabase
+    with patch("processing_service.routers.internal.parse_application", new_callable=AsyncMock):
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as c:
+            r = await c.post(
+                "/internal/events",
+                json=VALID_EVENT,
+                headers={"Authorization": f"Bearer {TEST_INTERNAL_TOKEN}"},
+            )
 
     assert r.status_code == 200
     assert r.json() == {"received": True}

@@ -10,9 +10,9 @@
 ---
 
 ## Current status
-- **Phase:** P1 — complete; P2 starting next
-- **Last working on:** Job management + candidate apply flow
-- **Next up:** P2 — Parsing pipeline (PDF/DOCX → clean text, OCR fallback)
+- **Phase:** P2 — complete; P3 (scoring engine) next
+- **Last working on:** Parsing pipeline
+- **Next up:** P3 — Scoring engine (rubric builder + per-CV scoring with evidence)
 
 ## Decisions (append-only)
 - 2026-06-04 — Product is a B2B BYOK shortlisting **engine**, not a public job board. Candidate apply screens are in v1; public discovery board deferred.
@@ -30,6 +30,12 @@
 ---
 
 ## Log (newest at top)
+
+### 2026-06-05 — P2: parsing pipeline
+- What changed: `processing_service/parsing/normaliser.py` — `normalise()` strips control chars, collapses blank lines, trims trailing whitespace. `extractor.py` — `extract(bytes, filename) → ParseResult`; PDF via pdfplumber → OCR fallback (pytesseract + pdf2image) if < 100 chars; DOCX via python-docx (paragraphs + tables); quality = good/low_confidence/failed; optional deps degrade gracefully if not installed. `pipeline.py` — `parse_application(application_id, org_id)` full async pipeline: fetch app row → download from Storage → extract → normalise → upsert candidates row → update application status. `routers/internal.py` updated: `application.received` events now queue `parse_application` as a BackgroundTask (immediate ACK, async parse).
+- Files touched: `processing_service/parsing/` (new package), `processing_service/routers/internal.py`, `requirements.txt`, `tests/test_parsing.py` (new, 18 tests)
+- How to test it: `pytest tests/test_parsing.py` — 18 tests. End-to-end: post a CV → internal event fires → parse_application runs in background → candidates row appears with parsed_text + quality.
+- Notes: OCR path requires Tesseract + Poppler installed (`winget install UB-Mannheim.TesseractOCR`). Without them, scanned PDFs get quality="low_confidence" rather than crashing. The `_HAS_OCR` flag at module level allows clean mocking in tests.
 
 ### 2026-06-05 — P1: job management + candidate apply
 - What changed: `processing_service/routers/jobs.py` — POST /jobs (create + unique token), GET /jobs (list active), GET /jobs/{id} (detail + application count). `intake_service/routers/apply.py` — GET /apply/{token} (public job info), POST /apply/{token} (multipart: name + email + CV; validates PDF/DOCX + ≤10 MB; uploads to Supabase Storage; creates application row; fires publisher). `intake_service/db.py` + `limiter.py` added. `python-multipart` + `slowapi` added. Demo endpoint removed (replaced by real apply flow). Storage migration SQL added.
