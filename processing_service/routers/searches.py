@@ -191,9 +191,58 @@ async def get_search(
         .select("id, candidate_id, overall_score, criteria_scores, summary, flags, rank")
         .eq("search_id", search_id)
         .eq("org_id", current_user.org_id)
-        .order("overall_score", desc=True)
+        .order("rank", desc=False)
         .execute()
         .data
     )
 
     return SearchDetailOut(**row.data, scores=[ScoreOut(**s) for s in scores])
+
+
+@router.get("/{search_id}/shortlist", response_model=list[ScoreOut])
+async def get_shortlist(
+    search_id: str,
+    current_user: Annotated[CurrentUser, Depends(get_current_user)],
+    top_n: int = 10,
+) -> list[ScoreOut]:
+    """
+    Return the top N ranked candidates from a completed search.
+    Ordered by rank (1 = best). Includes evidence quotes and per-criterion breakdown.
+    """
+    if top_n < 1 or top_n > 100:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="top_n must be between 1 and 100",
+        )
+
+    supabase = get_supabase()
+
+    # Verify search belongs to org and is complete
+    search = (
+        supabase.table("searches")
+        .select("id, status")
+        .eq("id", search_id)
+        .eq("org_id", current_user.org_id)
+        .maybe_single()
+        .execute()
+    )
+    if search.data is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Search not found")
+    if search.data["status"] != "complete":
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"Search is {search.data['status']}, not ready for shortlist yet",
+        )
+
+    scores = (
+        supabase.table("scores")
+        .select("id, candidate_id, overall_score, criteria_scores, summary, flags, rank")
+        .eq("search_id", search_id)
+        .eq("org_id", current_user.org_id)
+        .order("rank", desc=False)
+        .limit(top_n)
+        .execute()
+        .data
+    )
+
+    return [ScoreOut(**s) for s in scores]

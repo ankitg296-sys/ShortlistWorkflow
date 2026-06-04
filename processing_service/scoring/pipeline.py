@@ -8,6 +8,8 @@ from ..vault.crypto import decrypt
 from ..config import get_settings
 from .rubric import Criterion
 from .scorer import score_candidate
+from .ranker import rank_scores
+from .refiner import refine_top_n
 
 logger = logging.getLogger(__name__)
 
@@ -106,29 +108,71 @@ async def run_search(search_id: str, org_id: str) -> None:
         ]
         results = await asyncio.gather(*tasks, return_exceptions=True)
 
-        # 5. Store score rows
+        # 5. Store score rows + build score dicts for ranking
         scored = 0
         errors = 0
+        score_rows = []
         for candidate, result in zip(scoreable, results):
             if isinstance(result, Exception):
                 logger.error("candidate %s scoring failed: %s", candidate["id"], result)
                 errors += 1
                 continue
+            score_dict = {
+                "org_id": org_id,
+                "search_id": search_id,
+                "candidate_id": str(result.candidate_id),
+                "overall_score": float(result.overall_score),
+                "criteria_scores": [cs.model_dump() for cs in result.criteria],
+                "summary": result.summary,
+                "flags": result.flags,
+            }
             supabase.table("scores").upsert(
-                {
-                    "org_id": org_id,
-                    "search_id": search_id,
-                    "candidate_id": str(result.candidate_id),
-                    "overall_score": float(result.overall_score),
-                    "criteria_scores": [cs.model_dump() for cs in result.criteria],
-                    "summary": result.summary,
-                    "flags": result.flags,
-                },
+                score_dict,
                 on_conflict="search_id,candidate_id",
             ).execute()
+            score_rows.append(score_dict)
             scored += 1
 
-        # 6. Write audit log
+        # 6. Rank scores deterministically
+        ranked = rank_scores(score_rows)
+
+        # 7. Refine top 15 (optional; fallback to score-based order)
+        if len(ranked) > 1:
+            top_15 = ranked[:15]
+            # Fetch CVs for top candidates
+            for score in top_15:
+                candidate_row = (
+                    supabase.table("candidates")
+                    .select("parsed_text")
+                    .eq("id", score["candidate_id"])
+                    .maybe_single()
+                    .execute()
+                )
+                score["cv_text"] = candidate_row.data.get("parsed_text", "") if candidate_row.data else ""
+
+            refined_ids = await refine_top_n(
+                top_candidates=top_15,
+                criteria=criteria,
+                jd_text=search["jd_text"] or "",
+                recruiter_prompt=search["prompt"],
+                client=client,
+                model=model,
+                n=15,
+            )
+
+            # Rebuild ranked list with refined order for top 15
+            refined_ranks = {cid: i + 1 for i, cid in enumerate(refined_ids)}
+            for score in ranked:
+                if score["candidate_id"] in refined_ranks:
+                    score["rank"] = refined_ranks[score["candidate_id"]]
+
+        # 8. Write ranks back to DB
+        for score in ranked:
+            supabase.table("scores").update({"rank": score["rank"]}).eq(
+                "candidate_id", score["candidate_id"]
+            ).eq("search_id", search_id).execute()
+
+        # 9. Write audit log
         supabase.table("audit_log").insert({
             "org_id": org_id,
             "search_id": search_id,
@@ -137,11 +181,12 @@ async def run_search(search_id: str, org_id: str) -> None:
                 "model": model,
                 "candidates_scored": scored,
                 "candidates_errored": errors,
+                "candidates_ranked": len(ranked),
                 "prompt_preview": search["prompt"][:200],
             },
         }).execute()
 
-        # 7. Mark complete
+        # 10. Mark complete
         supabase.table("searches").update({
             "status": "complete",
             "completed_at": datetime.now(timezone.utc).isoformat(),

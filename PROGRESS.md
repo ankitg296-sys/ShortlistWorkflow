@@ -10,9 +10,9 @@
 ---
 
 ## Current status
-- **Phase:** P3 — complete; P4 (rank + refine + dashboard) next
-- **Last working on:** Scoring engine
-- **Next up:** P4 — Deterministic rank, refine pass over top-15, recruiter dashboard
+- **Phase:** P4 — complete; P5 (hardening) next
+- **Last working on:** Ranking + refine + React dashboard
+- **Next up:** P5 — Security hardening, audit log, rate limits, data deletion
 
 ## Decisions (append-only)
 - 2026-06-04 — Product is a B2B BYOK shortlisting **engine**, not a public job board. Candidate apply screens are in v1; public discovery board deferred.
@@ -30,6 +30,12 @@
 ---
 
 ## Log (newest at top)
+
+### 2026-06-05 — P4: rank + refine + React dashboard
+- What changed: `scoring/ranker.py` — deterministic rank by score desc, ties broken by candidate_id. `scoring/refiner.py` — one model call over top-15, returns refined order, falls back to score-based on any error (never crashes). Pipeline updated: score → rank → refine top-15 → update DB ranks. `routers/searches.py` — new `GET /searches/{id}/shortlist?top_n=10` endpoint, returns top N candidates ordered by rank. React dashboard (`web/`) — Vite + Tailwind, pages: LoginPage (Supabase Auth), JobsPage (create job, start search), ShortlistPage (ranked cards with scores, criteria, evidence, flags). Golden gate test harness (`tests/golden_run.py`) — documents 300-CV acceptance gate (awaits real dataset + answer key).
+- Files touched: `processing_service/scoring/ranker.py` (new), `processing_service/scoring/refiner.py` (new), `processing_service/scoring/pipeline.py`, `processing_service/routers/searches.py`, `web/` (new React app), `tests/test_ranker_refiner.py` (new, 9 tests), `tests/golden_run.py` (new, skipped), total 83 tests passing
+- How to test it: `pytest` (83 pass). Backend: create search, trigger POST /searches/{id}/run, poll GET /searches/{id}/shortlist?top_n=10. React: `cd web && npm install && npm run dev` (port 3000, not yet hooked to live API).
+- Notes: React dashboard is a UI skeleton — it shows the layout and pages but is not yet integrated to the backend API (P5 would wire it up). Golden test is skipped; seed it with 300 real CVs + expert top-10 before running P4 final gate.
 
 ### 2026-06-05 — P3: scoring engine
 - What changed: `provider/client.py` — single `get_anthropic_client(key)` entry point (swap-able). `scoring/rubric.py` — `build_rubric()`: one model call produces 4-6 criteria with weights summing to 1.0; validates with Pydantic. `scoring/scorer.py` — `score_candidate()`: one model call per CV, prompt-caches shared JD/rubric via `cache_control: ephemeral`, validates output against `CandidateScore` schema, recomputes `overall_score` deterministically from weights (never trusts model arithmetic), retries 2× on bad JSON, requires `evidence_quote` or `insufficient_evidence=true`. `scoring/pipeline.py` — `run_search()`: decrypt key → build client → score all candidates in parallel (`asyncio.gather`) → store scores → write audit_log → mark complete. `routers/searches.py` — `POST /searches` (build rubric, create row), `POST /searches/{id}/run` (trigger BackgroundTask), `GET /searches/{id}` (status + scores ordered by score desc).
