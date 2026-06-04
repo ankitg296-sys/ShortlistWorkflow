@@ -32,6 +32,12 @@
 
 ## Log (newest at top)
 
+### 2026-06-05 — Test Script: End-to-End Workflow Validation
+- What changed: `test_single_cv.py` — Comprehensive test script running full 10-step pipeline: sign up → add key → create job → submit CV → parse → score → rank → shortlist. Validates all core engine functionality with single CV. `TEST_WORKFLOW.md` — User guide with quick start, example output, troubleshooting. Script is async, polls for results, handles failures gracefully.
+- Files touched: `test_single_cv.py` (new, 420 lines), `TEST_WORKFLOW.md` (new)
+- How to test it: `python test_single_cv.py --api-key sk-ant-YOUR-KEY` (requires services running on 8001 + 8002). Interactive mode if no --api-key flag. Takes 2-3 minutes end-to-end. Shows full shortlist with scores, evidence quotes, ranks.
+- Notes: Script uses test CV (generated). Can provide your own CV via `--cv path/to/cv.pdf`. Validates parsing, scoring isolation, evidence validation, ranking, multi-tenant auth, key encryption—entire critical path.
+
 ### 2026-06-05 — P7: Production readiness infrastructure
 - What changed: `monitoring.py` — Metrics class (tracks searches, scores, latencies), error tracking stubs, log redaction helper (never logs keys). `tests/load_test.py` — Load testing harness stubs (1000-CV search, concurrent searches, API throughput) awaiting golden set. `RUNBOOK.md` — Complete ops guide (architecture diagram, deployment checklist, monitoring, incident response, backup/recovery, escalation). All P7 infrastructure ready for production launch.
 - Files touched: `processing_service/monitoring.py` (new), `tests/load_test.py` (new), `RUNBOOK.md` (new), `processing_service/main.py`
