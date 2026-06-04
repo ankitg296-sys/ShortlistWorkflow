@@ -68,12 +68,12 @@ def make_mock_client(
 
 @pytest.mark.asyncio
 async def test_me_no_token():
-    """No Authorization header → HTTPBearer raises 403."""
+    """No Authorization header → HTTPBearer raises 401."""
     from processing_service.main import app
 
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         r = await client.get("/auth/me")
-    assert r.status_code == 403
+    assert r.status_code == 401
 
 
 @pytest.mark.asyncio

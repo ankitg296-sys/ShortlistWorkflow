@@ -121,13 +121,13 @@ async def test_internal_events_valid_token():
 
 @pytest.mark.asyncio
 async def test_internal_events_missing_token():
-    """No Authorization header → 403."""
+    """No Authorization header → 401."""
     from processing_service.main import app
 
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as c:
         r = await c.post("/internal/events", json=VALID_EVENT)
 
-    assert r.status_code == 403
+    assert r.status_code == 401
 
 
 @pytest.mark.asyncio
