@@ -10,16 +10,17 @@
 ---
 
 ## Current status
-- **Phase:** P0 — Foundations (in progress)
-- **Last working on:** Recruiter auth
-- **Next up:** CI + auto-deploy to staging (P0 final task)
+- **Phase:** P1 — Intake service (starting)
+- **Last working on:** P0 complete
+- **Next up:** Job management (processing-service) + candidate apply endpoints (intake-service)
 
 ## Decisions (append-only)
 - 2026-06-04 — Product is a B2B BYOK shortlisting **engine**, not a public job board. Candidate apply screens are in v1; public discovery board deferred.
 - 2026-06-04 — Two services: public **intake** (no keys) + private **processing** (engine + key vault).
 - 2026-06-04 — Scoring is **one CV per model call** (isolation) with cited evidence + `insufficient_evidence`; ranking order is deterministic code.
 - 2026-06-04 — Model access via a **provider layer**; MVP on **Claude direct** (Anthropic SDK); OpenRouter only when a non-Claude customer needs it.
-- 2026-06-04 — Tenant model default: **org-as-tenant** (extendable to an agency client-layer). *To confirm.*
+- 2026-06-04 — Tenant model confirmed: **org-as-tenant**.
+- 2026-06-05 — CI/deploy skipped; everything runs locally for now. Will revisit when approaching pilot (P6).
 
 ## Open items / questions
 - [x] Confirm tenant model: **org-as-tenant** confirmed. Schema built to allow agency client-layer extension later.
