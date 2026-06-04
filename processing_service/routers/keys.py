@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime, timezone
 from typing import Annotated
 
@@ -9,6 +10,8 @@ from ..db import get_supabase
 from ..dependencies import CurrentUser, get_current_user
 from ..vault.crypto import decrypt, encrypt
 from ..vault.provider import test_api_key
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/keys", tags=["keys"])
 
@@ -77,8 +80,9 @@ async def add_key(
     ciphertext = encrypt(body.api_key, settings.encryption_master_key)
     key_hint = body.api_key[-4:] if len(body.api_key) >= 4 else "****"
 
+    supabase = get_supabase()
     row = (
-        get_supabase()
+        supabase
         .table("api_keys")
         .insert(
             {
@@ -92,6 +96,20 @@ async def add_key(
         .execute()
         .data[0]
     )
+
+    # Audit log key addition (never log the plaintext key)
+    supabase.table("audit_log").insert({
+        "org_id": current_user.org_id,
+        "event_type": "key_added",
+        "payload": {
+            "key_id": row["id"],
+            "key_hint": key_hint,
+            "provider": body.provider,
+            "added_by": current_user.id,
+        },
+    }).execute()
+
+    logger.info("key %s added for org %s by %s", row["id"], current_user.org_id, current_user.id)
     return _to_key_out(row)
 
 
@@ -119,16 +137,41 @@ async def delete_key(
     current_user: Annotated[CurrentUser, Depends(get_current_user)],
 ) -> None:
     """Permanently delete an API key. Filtered by both id AND org_id for tenant safety."""
+    supabase = get_supabase()
+
+    # Verify key belongs to org
+    key_row = (
+        supabase.table("api_keys")
+        .select("id, key_hint")
+        .eq("id", key_id)
+        .eq("org_id", current_user.org_id)
+        .maybe_single()
+        .execute()
+    )
+    if key_row.data is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Key not found")
+
     result = (
-        get_supabase()
+        supabase
         .table("api_keys")
         .delete()
         .eq("id", key_id)
-        .eq("org_id", current_user.org_id)  # belt-and-suspenders: service role bypasses RLS
+        .eq("org_id", current_user.org_id)
         .execute()
     )
-    if not result.data:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Key not found")
+
+    # Audit log key deletion
+    supabase.table("audit_log").insert({
+        "org_id": current_user.org_id,
+        "event_type": "key_deleted",
+        "payload": {
+            "key_id": key_id,
+            "key_hint": key_row.data["key_hint"],
+            "deleted_by": current_user.id,
+        },
+    }).execute()
+
+    logger.info("key %s deleted for org %s by %s", key_id, current_user.org_id, current_user.id)
 
 
 @router.post("/{key_id}/test", response_model=TestKeyResult)
@@ -159,9 +202,21 @@ async def test_key(
 
     ok = test_api_key(row.data["provider"], plaintext, model)
 
+    # Audit log key test (pass/fail, no key details)
+    supabase.table("audit_log").insert({
+        "org_id": current_user.org_id,
+        "event_type": "key_tested",
+        "payload": {
+            "key_id": key_id,
+            "test_result": "pass" if ok else "fail",
+            "tested_by": current_user.id,
+        },
+    }).execute()
+
     if ok:
         supabase.table("api_keys").update(
             {"validated_at": datetime.now(timezone.utc).isoformat()}
         ).eq("id", key_id).eq("org_id", current_user.org_id).execute()
 
+    logger.info("key %s test %s for org %s", key_id, "pass" if ok else "fail", current_user.org_id)
     return TestKeyResult(ok=ok)

@@ -172,17 +172,24 @@ async def run_search(search_id: str, org_id: str) -> None:
                 "candidate_id", score["candidate_id"]
             ).eq("search_id", search_id).execute()
 
-        # 9. Write audit log
+        # 9. Write audit log (full context, never keys)
         supabase.table("audit_log").insert({
             "org_id": org_id,
             "search_id": search_id,
             "event_type": "search_complete",
             "payload": {
                 "model": model,
+                "job_id": search["job_id"],
+                "prompt": search["prompt"],
+                "jd_text": search["jd_text"],
+                "criteria": [c.model_dump() for c in criteria],
                 "candidates_scored": scored,
                 "candidates_errored": errors,
                 "candidates_ranked": len(ranked),
-                "prompt_preview": search["prompt"][:200],
+            },
+            "metadata": {
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "status": "complete",
             },
         }).execute()
 
@@ -199,6 +206,19 @@ async def run_search(search_id: str, org_id: str) -> None:
 
     except Exception as exc:
         logger.error("run_search %s failed: %s", search_id, exc)
+        supabase.table("audit_log").insert({
+            "org_id": org_id,
+            "search_id": search_id,
+            "event_type": "search_error",
+            "payload": {
+                "error_type": type(exc).__name__,
+                "error_message": str(exc)[:500],
+            },
+            "metadata": {
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "status": "error",
+            },
+        }).execute()
         supabase.table("searches").update({"status": "error"}).eq("id", search_id).execute()
 
 

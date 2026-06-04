@@ -10,6 +10,7 @@ from ..provider.client import get_anthropic_client
 from ..scoring.pipeline import run_search
 from ..scoring.rubric import Criterion, build_rubric
 from ..vault.crypto import decrypt
+from .quotas import check_quotas_before_search
 
 router = APIRouter(prefix="/searches", tags=["searches"])
 
@@ -146,6 +147,11 @@ async def trigger_run(
     Poll GET /searches/{id} for status and results.
     """
     supabase = get_supabase()
+
+    # Check quotas before starting
+    quota_error = check_quotas_before_search(supabase, current_user.org_id)
+    if quota_error:
+        raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail=quota_error)
 
     row = (
         supabase.table("searches")
