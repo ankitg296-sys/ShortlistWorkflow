@@ -9,6 +9,7 @@ from .routers import auth as auth_router
 from .routers import internal as internal_router
 from .routers import jobs as jobs_router
 from .routers import keys as keys_router
+from .routers import searches as searches_router
 
 settings = get_settings()
 logging.basicConfig(level=settings.log_level)
@@ -41,6 +42,7 @@ app.add_middleware(
 app.include_router(auth_router.router)
 app.include_router(keys_router.router)
 app.include_router(jobs_router.router)
+app.include_router(searches_router.router)
 app.include_router(internal_router.router)
 
 

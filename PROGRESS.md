@@ -10,9 +10,9 @@
 ---
 
 ## Current status
-- **Phase:** P2 — complete; P3 (scoring engine) next
-- **Last working on:** Parsing pipeline
-- **Next up:** P3 — Scoring engine (rubric builder + per-CV scoring with evidence)
+- **Phase:** P3 — complete; P4 (rank + refine + dashboard) next
+- **Last working on:** Scoring engine
+- **Next up:** P4 — Deterministic rank, refine pass over top-15, recruiter dashboard
 
 ## Decisions (append-only)
 - 2026-06-04 — Product is a B2B BYOK shortlisting **engine**, not a public job board. Candidate apply screens are in v1; public discovery board deferred.
@@ -30,6 +30,12 @@
 ---
 
 ## Log (newest at top)
+
+### 2026-06-05 — P3: scoring engine
+- What changed: `provider/client.py` — single `get_anthropic_client(key)` entry point (swap-able). `scoring/rubric.py` — `build_rubric()`: one model call produces 4-6 criteria with weights summing to 1.0; validates with Pydantic. `scoring/scorer.py` — `score_candidate()`: one model call per CV, prompt-caches shared JD/rubric via `cache_control: ephemeral`, validates output against `CandidateScore` schema, recomputes `overall_score` deterministically from weights (never trusts model arithmetic), retries 2× on bad JSON, requires `evidence_quote` or `insufficient_evidence=true`. `scoring/pipeline.py` — `run_search()`: decrypt key → build client → score all candidates in parallel (`asyncio.gather`) → store scores → write audit_log → mark complete. `routers/searches.py` — `POST /searches` (build rubric, create row), `POST /searches/{id}/run` (trigger BackgroundTask), `GET /searches/{id}` (status + scores ordered by score desc).
+- Files touched: `processing_service/provider/` (new), `processing_service/scoring/` (new), `processing_service/routers/searches.py` (new), `processing_service/main.py`, `tests/test_scoring.py` (new, 12 tests)
+- How to test it: `pytest tests/test_scoring.py`. Live: add org key via POST /keys/, POST /searches/ with a job_id + prompt + JD, then POST /searches/{id}/run — poll GET /searches/{id} for status=complete + scores.
+- Notes: `overall_score` is recomputed in `_parse_score` from weights × scores — model arithmetic is not trusted. evidence_quote is enforced: empty quote + insufficient_evidence=false triggers retry. The `cache_control: ephemeral` on the shared context block cuts repeated-token cost by up to 90% across a batch.
 
 ### 2026-06-05 — P2: parsing pipeline
 - What changed: `processing_service/parsing/normaliser.py` — `normalise()` strips control chars, collapses blank lines, trims trailing whitespace. `extractor.py` — `extract(bytes, filename) → ParseResult`; PDF via pdfplumber → OCR fallback (pytesseract + pdf2image) if < 100 chars; DOCX via python-docx (paragraphs + tables); quality = good/low_confidence/failed; optional deps degrade gracefully if not installed. `pipeline.py` — `parse_application(application_id, org_id)` full async pipeline: fetch app row → download from Storage → extract → normalise → upsert candidates row → update application status. `routers/internal.py` updated: `application.received` events now queue `parse_application` as a BackgroundTask (immediate ACK, async parse).
