@@ -8,6 +8,8 @@ class Settings(BaseSettings):
 
     supabase_url: str
     supabase_anon_key: str
+    processing_service_url: str = "http://localhost:8002"
+    internal_auth_token: str  # shared secret for service-to-service calls
     cors_origins: list[str] = ["http://localhost:3000"]
     log_level: str = "INFO"
     port: int = 8001

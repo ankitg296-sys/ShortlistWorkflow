@@ -10,3 +10,6 @@ os.environ.setdefault("ENCRYPTION_MASTER_KEY", "dGVzdGtleXRlc3RrZXl0ZXN0a2V5dGVz
 os.environ.setdefault(
     "SUPABASE_JWT_SECRET", "test-jwt-secret-for-unit-tests-long-enough-for-hs256-alg!!"
 )
+# Must match TEST_INTERNAL_TOKEN in test_routing.py
+os.environ.setdefault("INTERNAL_AUTH_TOKEN", "test-internal-token-for-routing-tests")
+os.environ.setdefault("PROCESSING_SERVICE_URL", "http://localhost:8002")

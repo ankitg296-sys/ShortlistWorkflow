@@ -12,7 +12,7 @@
 ## Current status
 - **Phase:** P0 — Foundations (in progress)
 - **Last working on:** Recruiter auth
-- **Next up:** Routing transport between services (P0 final task), then CI/deploy setup
+- **Next up:** CI + auto-deploy to staging (P0 final task)
 
 ## Decisions (append-only)
 - 2026-06-04 — Product is a B2B BYOK shortlisting **engine**, not a public job board. Candidate apply screens are in v1; public discovery board deferred.
@@ -29,6 +29,12 @@
 ---
 
 ## Log (newest at top)
+
+### 2026-06-05 — P0: routing transport (intake → processing)
+- What changed: `intake_service/publisher.py` — `publish_application_received` posts `{"event":"application.received",...}` to processing-service `/internal/events` via httpx; fire-and-forget (errors logged, never propagated). `processing_service/routers/internal.py` — `POST /internal/events` verifies `INTERNAL_AUTH_TOKEN` with `hmac.compare_digest`, logs the event, returns `{"received":true}`; hidden from public docs (`include_in_schema=False`). `intake_service/main.py` — temporary `POST /demo/submit` endpoint to prove the round-trip. `INTERNAL_AUTH_TOKEN` + `PROCESSING_SERVICE_URL` added to both configs and `.env.example`.
+- Files touched: `intake_service/publisher.py` (new), `intake_service/config.py`, `intake_service/main.py`, `processing_service/routers/internal.py` (new), `processing_service/config.py`, `processing_service/main.py`, `tests/conftest.py`, `tests/test_routing.py` (new), `.env.example`
+- How to test it: `pytest tests/test_routing.py`. End-to-end with both services running: `curl -X POST "http://localhost:8001/demo/submit"` → watch the processing-service log for `received event=application.received`.
+- Notes: publisher is deliberately a thin function — swap the body for a queue publish (Redis, SQS, etc.) without changing any callers. `INTERNAL_AUTH_TOKEN` is **the same value** in both services' `.env`. `/demo/submit` is marked for removal in P1.
 
 ### 2026-06-05 — P0: encrypted key vault
 - What changed: `vault/crypto.py` — AES-256-GCM encrypt/decrypt (random 12-byte nonce per call; base64(nonce||ct||tag) stored). `vault/provider.py` — `test_api_key` calls Anthropic `messages.count_tokens` (free, validates auth without inference); key never logged, only pass/fail. `routers/keys.py` — POST /keys (encrypt + store, key_hint=last-4), GET /keys (metadata only, encrypted_key excluded from SELECT), DELETE /keys/{id} (explicit org_id filter since service role bypasses RLS), POST /keys/{id}/test (decrypt → live call → update validated_at → return {ok}). `default_model` added to config. `anthropic` and `cryptography` added to requirements.

@@ -10,6 +10,7 @@ class Settings(BaseSettings):
     supabase_anon_key: str
     supabase_service_role_key: str
     supabase_jwt_secret: str  # from Supabase project → Settings → API → JWT Settings
+    internal_auth_token: str  # shared secret for intake→processing calls
     encryption_master_key: str  # base64-encoded 32-byte key for envelope encryption
     default_model: str = "claude-haiku-4-5-20251001"  # fallback model for key testing
     cors_origins: list[str] = ["http://localhost:3000"]

@@ -5,6 +5,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from .config import get_settings
+from .publisher import publish_application_received
 
 settings = get_settings()
 logging.basicConfig(level=settings.log_level)
@@ -37,3 +38,19 @@ app.add_middleware(
 @app.get("/health")
 async def health():
     return {"status": "ok", "service": "intake"}
+
+
+# P0 demo only — remove / replace with real candidate apply flow in P1
+@app.post("/demo/submit")
+async def demo_submit(
+    org_id: str = "demo-org",
+    job_id: str = "demo-job",
+    application_id: str = "demo-application",
+) -> dict:
+    """Trigger a dummy routing event to prove the intake→processing transport works."""
+    await publish_application_received(
+        org_id=org_id,
+        job_id=job_id,
+        application_id=application_id,
+    )
+    return {"submitted": True, "org_id": org_id, "job_id": job_id, "application_id": application_id}
