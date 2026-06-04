@@ -13,3 +13,5 @@ os.environ.setdefault(
 # Must match TEST_INTERNAL_TOKEN in test_routing.py
 os.environ.setdefault("INTERNAL_AUTH_TOKEN", "test-internal-token-for-routing-tests")
 os.environ.setdefault("PROCESSING_SERVICE_URL", "http://localhost:8002")
+# intake-service now also needs service role key (for Storage uploads)
+os.environ.setdefault("SUPABASE_SERVICE_ROLE_KEY", "test-service-role-key")

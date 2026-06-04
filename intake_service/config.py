@@ -8,6 +8,7 @@ class Settings(BaseSettings):
 
     supabase_url: str
     supabase_anon_key: str
+    supabase_service_role_key: str  # for Supabase Storage uploads
     processing_service_url: str = "http://localhost:8002"
     internal_auth_token: str  # shared secret for service-to-service calls
     cors_origins: list[str] = ["http://localhost:3000"]

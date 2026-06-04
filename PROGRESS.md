@@ -10,9 +10,9 @@
 ---
 
 ## Current status
-- **Phase:** P1 — Intake service (starting)
-- **Last working on:** P0 complete
-- **Next up:** Job management (processing-service) + candidate apply endpoints (intake-service)
+- **Phase:** P1 — complete; P2 starting next
+- **Last working on:** Job management + candidate apply flow
+- **Next up:** P2 — Parsing pipeline (PDF/DOCX → clean text, OCR fallback)
 
 ## Decisions (append-only)
 - 2026-06-04 — Product is a B2B BYOK shortlisting **engine**, not a public job board. Candidate apply screens are in v1; public discovery board deferred.
@@ -30,6 +30,12 @@
 ---
 
 ## Log (newest at top)
+
+### 2026-06-05 — P1: job management + candidate apply
+- What changed: `processing_service/routers/jobs.py` — POST /jobs (create + unique token), GET /jobs (list active), GET /jobs/{id} (detail + application count). `intake_service/routers/apply.py` — GET /apply/{token} (public job info), POST /apply/{token} (multipart: name + email + CV; validates PDF/DOCX + ≤10 MB; uploads to Supabase Storage; creates application row; fires publisher). `intake_service/db.py` + `limiter.py` added. `python-multipart` + `slowapi` added. Demo endpoint removed (replaced by real apply flow). Storage migration SQL added.
+- Files touched: `processing_service/routers/jobs.py` (new), `intake_service/routers/apply.py` (new), `intake_service/db.py` (new), `intake_service/limiter.py` (new), `intake_service/config.py`, `intake_service/main.py`, `processing_service/main.py`, `requirements.txt`, `supabase/migrations/20260605000001_storage.sql` (new), `tests/test_jobs.py` (new), `tests/test_apply.py` (new)
+- How to test it: `pytest` — 44 tests pass. End-to-end: `POST /jobs/` as recruiter → get token → `POST /apply/{token}` with a PDF → application row in DB + routing event logged.
+- Notes: Storage upload uses the service role key (intake-service now holds it). Apply token is `secrets.token_urlsafe(16)` — 128-bit random, URL-safe. Rate limit: 10 req/min per IP on POST /apply. Slowapi deprecation warnings are in the library, not our code.
 
 ### 2026-06-05 — P0: routing transport (intake → processing)
 - What changed: `intake_service/publisher.py` — `publish_application_received` posts `{"event":"application.received",...}` to processing-service `/internal/events` via httpx; fire-and-forget (errors logged, never propagated). `processing_service/routers/internal.py` — `POST /internal/events` verifies `INTERNAL_AUTH_TOKEN` with `hmac.compare_digest`, logs the event, returns `{"received":true}`; hidden from public docs (`include_in_schema=False`). `intake_service/main.py` — temporary `POST /demo/submit` endpoint to prove the round-trip. `INTERNAL_AUTH_TOKEN` + `PROCESSING_SERVICE_URL` added to both configs and `.env.example`.
