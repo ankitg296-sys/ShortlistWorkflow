@@ -9,6 +9,7 @@ class Settings(BaseSettings):
     supabase_url: str
     supabase_anon_key: str
     supabase_service_role_key: str
+    supabase_jwt_secret: str  # from Supabase project → Settings → API → JWT Settings
     encryption_master_key: str  # base64-encoded 32-byte key for envelope encryption
     cors_origins: list[str] = ["http://localhost:3000"]
     log_level: str = "INFO"
